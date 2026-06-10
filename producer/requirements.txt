@@ -1,0 +1,2 @@
+faker==37.4.0
+kafka-python==2.2.15
