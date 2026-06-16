@@ -1,14 +1,38 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-.env
+# Virtual environments
 venv/
 .venv/
 
+# Environment variables
+.env
+
+# VS Code
 .vscode/
 
-data/
-
-logs/
-
+# OS files
 .DS_Store
+
+# Logs
+logs/
+*.log
+
+# Spark data lake
+spark/data/
+
+# Spark checkpoints
+spark/checkpoints/
+
+# Airflow
+airflow/logs/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+
+# PostgreSQL data
+postgres/data/

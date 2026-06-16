@@ -76,11 +76,14 @@ services:
 
     volumes:
       - ./spark/data:/opt/spark-data
+      - ./spark/app:/opt/spark-apps/app
 
     environment:
       SPARK_SUBMIT_OPTS: "-Duser.home=/tmp -Divy.home=/tmp/.ivy2.5.2"
 
-    command: tail -f /dev/null # test
+    restart: unless-stopped
+
+    command: tail -f /dev/null # testowo przy development, docelowo będzie to spark-submit
 
 volumes:
   postgres_data:

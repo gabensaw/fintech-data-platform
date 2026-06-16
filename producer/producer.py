@@ -56,7 +56,7 @@ def generate_transaction():
         "country": "PL",
         "payment_method": random.choice(PAYMENT_METHODS),
         "fraud_flag": random.random() < 0.02,
-        "timestamp": datetime.now(UTC).isoformat()
+        "event_timestamp": datetime.now(UTC).isoformat()
     }
 
 
