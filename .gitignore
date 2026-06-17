@@ -31,8 +31,10 @@ spark/checkpoints/
 airflow/logs/
 
 # dbt
+dbt/logs/
 dbt/target/
 dbt/dbt_packages/
+dbt/.user.yml
 
 # PostgreSQL data
 postgres/data/

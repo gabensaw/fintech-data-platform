@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: warehouse
+    database: fintech
+    schema: public
+    
+    tables:
+      - name: daily_transaction_metrics
+      - name: merchant_metrics

@@ -1,0 +1,16 @@
+name: fintech_dbt
+
+version: '1.0'
+
+profile: fintech
+
+model-paths:
+  - models
+
+models:
+  fintech_dbt:
+    staging:
+      +materialized: view
+    
+    marts:
+      +materialized: table

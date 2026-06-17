@@ -85,5 +85,17 @@ services:
 
     command: tail -f /dev/null # testowo przy development, docelowo będzie to spark-submit
 
+  dbt:
+    build:
+      context: ./dbt
+    
+    container_name: dbt
+
+    volumes:
+      - ./dbt:/dbt
+
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
