@@ -91,11 +91,58 @@ services:
     
     container_name: dbt
 
+    ports:
+      - "8081:8081"
+
     volumes:
       - ./dbt:/dbt
 
     depends_on:
       - postgres
+
+  airflow-init:
+    build:
+      context: ./airflow
+
+    container_name: airflow-init
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    command: airflow db migrate
+
+  airflow:
+    build:
+      context: ./airflow
+
+    container_name: airflow
+
+    ports:
+      - "8088:8080"
+
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./dbt:/dbt
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    depends_on:
+      - airflow-init
+      - postgres
+
+    command: airflow standalone
 
 volumes:
   postgres_data:

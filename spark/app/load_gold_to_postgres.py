@@ -20,6 +20,7 @@ daily_metrics_df = spark.read.parquet(
 )
 
 daily_metrics_df.write \
+    .option("truncate", "true") \
     .mode("overwrite") \
     .jdbc(
         url=POSTGRES_URL,
@@ -33,6 +34,7 @@ merchant_metrics_df = spark.read.parquet(
 )
 
 merchant_metrics_df.write \
+    .option("truncate", "true") \
     .mode("overwrite") \
     .jdbc(
         url=POSTGRES_URL,
