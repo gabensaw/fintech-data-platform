@@ -1,0 +1,142 @@
+version: 2
+
+models:
+  - name: mart_daily_kpis
+    description: "Daily platform KPI summary."
+
+    columns:
+      - name: transaction_date
+        description: "Business date for the KPI row."
+        tests:
+          - not_null
+          - unique
+
+      - name: total_transactions
+        description: "Total number of transactions for the day."
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total transaction amount for the day."
+        tests:
+          - not_null
+
+      - name: average_amount
+        description: "Average transaction amount for the day."
+        tests:
+          - not_null
+
+      - name: fraud_count
+        description: "Total number of fraudulent transactions for the day."
+        tests:
+          - not_null
+      - name: fraud_rate
+        description: "Fraud ratio for the day."
+        tests:
+          - not_null
+
+  - name: mart_top_merchants
+    description: "Merchant ranking by total transaction amount."
+
+    columns:
+      - name: merchant
+        description: "Merchant name."
+        tests:
+          - not_null
+          - unique
+
+      - name: transaction_count
+        description: "Number of transactions per merchant."
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total amount per merchant."
+        tests:
+          - not_null
+
+      - name: average_amount
+        description: "Average transaction amount per merchant."
+        tests:
+          - not_null
+        
+      - name: fraud_count
+        description: "Fraudulent transactions per merchant."
+        tests:
+          - not_null
+
+  - name: mart_merchant_performance
+    description: "Merchant performance with revenue share percentage."
+
+    columns:
+      - name: merchant
+        description: "Merchant name."
+        tests:
+          - not_null
+          - unique
+
+      - name: transaction_count
+        description: "Number of transactions per merchant."
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total transaction amount per merchant."
+        tests:
+          - not_null
+
+      - name: average_amount
+        description: "Average transaction amount per merchant."
+        tests:
+          - not_null
+
+      - name: revenue_share_pct
+        description: "Share of total platform revenue."
+        tests:
+          - not_null
+
+  - name: mart_merchant_tier
+    description: Merchant classification by revenue tier.
+
+    columns:
+      - name: merchant
+        description: Merchant name.
+        tests:
+          - not_null
+          - unique
+
+      - name: tier
+        description: Merchant revenue tier.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Bronze', 'Silver', 'Gold', 'Platinum']
+
+  - name: mart_platform_summary
+    description: One-row executive summary for the platform.
+    
+    columns:
+      - name: total_merchants
+        description: Total number of merchants.
+        tests:
+          - not_null
+
+      - name: total_transactions
+        description: Total number of transactions.
+        tests:
+          - not_null
+
+      - name: total_revenue
+        description: Total revenue across the platform.
+        tests:
+          - not_null
+
+      - name: avg_transaction_amount
+        description: Average transaction amount across the platform.
+        tests:
+          - not_null
+
+      - name: total_fraud_transactions
+        description: Total number of fraudulent transactions.
+        tests:
+          - not_null

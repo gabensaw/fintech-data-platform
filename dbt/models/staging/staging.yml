@@ -1,0 +1,66 @@
+version: 2
+
+models:
+  - name: stg_daily_transaction_metrics
+    description: "Daily aggregated transaction KPIs loaded from warehouse."
+
+    columns:
+      - name: transaction_date
+        description: "Business date of aggregated transactions."
+        tests:
+          - not_null
+
+      - name: total_transactions
+        description: "Number of transactions for the day."
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total transaction amount for the day."
+        tests:
+            - not_null
+
+      - name: average_amount
+        description: "Average transaction amount for the day."
+        tests:
+          - not_null
+
+      - name: fraud_count
+        description: "Number of fraudulent transactions."
+        tests:
+          - not_null
+
+      - name: fraud_rate
+        description: "Fraud ratio for the day."
+        tests:
+          - not_null
+
+  - name: stg_merchant_metrics
+    description: "Merchant-level aggregated transaction metrics."
+
+    columns:
+      - name: merchant
+        description: "Merchant name."
+        tests:
+          - not_null
+          - unique
+
+      - name: transaction_count
+        description: "Number of merchant transactions."
+        tests:
+          - not_null
+
+      - name: total_amount
+        description: "Total merchant revenue."
+        tests:
+          - not_null
+
+      - name: average_amount
+        description: "Average merchant transaction value."
+        tests:
+          - not_null
+
+      - name: fraud_count
+        description: "Number of merchant fraud transactions."
+        tests:
+          - not_null
