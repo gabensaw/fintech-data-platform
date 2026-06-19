@@ -1,10 +1,18 @@
 SELECT
     merchant,
+    total_amount,
     CASE
-        WHEN total_amount >= 40000 THEN 'Platinum'
-        WHEN total_amount >= 30000 THEN 'Gold'
-        WHEN total_amount >= 20000 THEN 'Silver'
+        WHEN ntile = 1 THEN 'Platinum'
+        WHEN ntile = 2 THEN 'Gold'
+        WHEN ntile = 3 THEN 'Silver'
         ELSE 'Bronze'
     END AS tier
-FROM {{ ref('stg_merchant_metrics') }}
-ORDER BY total_amount DESC
+FROM (
+    SELECT
+        merchant,
+        total_amount,
+        NTILE(4) OVER (
+            ORDER BY total_amount DESC
+        ) AS ntile
+    FROM {{ ref('stg_merchant_metrics') }}
+) t
