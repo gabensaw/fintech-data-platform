@@ -11,13 +11,19 @@ with DAG(
     tags=["fintech", "portfolio"],
 ) as dag:
 
-    spark_job = BashOperator(
-        task_id="spark_job",
-        bash_command="""
-        docker exec spark /opt/spark/bin/spark-submit \
-        --packages org.postgresql:postgresql:42.7.7 \
-        /opt/spark-apps/app/load_gold_to_postgres.py
-        """
+    build_silver_layer = BashOperator(
+        task_id="build_silver_layer",
+        bash_command="docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/silver_job.py",
+    )
+
+    build_gold_layer = BashOperator(
+        task_id="build_gold_layer",
+        bash_command="docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/gold_job.py",
+    )
+
+    load_gold_to_postgres = BashOperator(
+        task_id="load_gold_to_postgres",
+        bash_command="docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/load_gold_to_postgres.py",
     )
 
     dbt_run = BashOperator(
@@ -34,4 +40,10 @@ with DAG(
         """
     )
 
-    spark_job >> dbt_run >> dbt_test
+    (
+        build_silver_layer
+        >> build_gold_layer
+        >> load_gold_to_postgres
+        >> dbt_run
+        >> dbt_test
+    )

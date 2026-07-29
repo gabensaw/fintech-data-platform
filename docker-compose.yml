@@ -1,7 +1,7 @@
 services:
 
   postgres:
-    image: postgres:16
+    image: postgres:16.5
     container_name: postgres
 
     environment:
@@ -14,10 +14,22 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/initdb:/docker-entrypoint-initdb.d
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintech"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   kafka:
-    image: apache/kafka:latest
+    image: apache/kafka:4.1.2
     container_name: kafka
+
+    restart: unless-stopped
 
     ports:
       - "9092:9092"
@@ -37,8 +49,15 @@ services:
 
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
 
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 20s
+
   kafka-ui:
-    image: provectuslabs/kafka-ui:latest
+    image: provectuslabs/kafka-ui:v0.7.2
     container_name: kafka-ui
 
     ports:
@@ -49,7 +68,10 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
 
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+
+    restart: unless-stopped
 
   producer:
     build:
@@ -61,7 +83,8 @@ services:
       - .env
 
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     
     restart: unless-stopped
 
@@ -72,7 +95,8 @@ services:
     container_name: spark
 
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
     volumes:
       - ./spark/data:/opt/spark-data
@@ -83,7 +107,7 @@ services:
 
     restart: unless-stopped
 
-    command: tail -f /dev/null # testowo przy development, docelowo będzie to spark-submit
+    command: tail -f /dev/null # keeps the Spark container running for manual spark-submit commands
 
   dbt:
     build:
@@ -98,7 +122,10 @@ services:
       - ./dbt:/dbt
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+    restart: unless-stopped
 
   airflow-init:
     build:
@@ -106,9 +133,18 @@ services:
 
     container_name: airflow-init
 
+    entrypoint:
+      - /opt/airflow/entrypoint.sh
+
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+
+    depends_on:
+      postgres:
+        condition: service_healthy
 
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -116,7 +152,10 @@ services:
       - ./airflow/plugins:/opt/airflow/plugins
       - /var/run/docker.sock:/var/run/docker.sock
 
-    command: airflow db migrate
+    command:
+      - airflow
+      - db
+      - migrate
 
   airflow:
     build:
@@ -124,12 +163,17 @@ services:
 
     container_name: airflow
 
+    entrypoint:
+      - /opt/airflow/entrypoint.sh
+
     ports:
       - "8088:8080"
 
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
 
     volumes:
       - ./airflow/dags:/opt/airflow/dags
@@ -139,13 +183,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
     depends_on:
-      - airflow-init
-      - postgres
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
 
-    command: airflow standalone
+    restart: unless-stopped
+    command:
+      - airflow
+      - standalone
 
   metabase:
-    image: metabase/metabase:latest
+    image: metabase/metabase:v0.56.7
 
     container_name: metabase
 
@@ -161,7 +210,8 @@ services:
       MB_DB_HOST: postgres
 
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
     restart: unless-stopped
 

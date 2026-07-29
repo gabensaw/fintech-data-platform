@@ -4,5 +4,6 @@ SELECT
     total_amount,
     average_amount,
     fraud_count,
-    fraud_rate
+    fraud_rate,
+    warehouse_loaded_at
 FROM {{ source('warehouse', 'daily_transaction_metrics') }}

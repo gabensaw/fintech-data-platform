@@ -35,6 +35,11 @@ models:
         tests:
           - not_null
 
+      - name: warehouse_loaded_at
+        description: "Timestamp when the Gold dataset was loaded into PostgreSQL."
+        tests:
+          - not_null
+
   - name: stg_merchant_metrics
     description: "Merchant-level aggregated transaction metrics."
 
@@ -62,5 +67,10 @@ models:
 
       - name: fraud_count
         description: "Number of merchant fraud transactions."
+        tests:
+          - not_null
+
+      - name: warehouse_loaded_at
+        description: "Timestamp when the Gold dataset was loaded into PostgreSQL."
         tests:
           - not_null

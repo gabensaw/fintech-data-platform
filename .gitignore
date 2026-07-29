@@ -20,6 +20,20 @@ venv/
 # Logs
 logs/
 *.log
+*.logs
+*_logs.txt
+*_log.txt
+*_current.txt
+*_tail.txt
+*_utf8.txt
+*_state.json
+*_debug.txt
+*-debug.txt
+*-logs.txt
+compose*.txt
+compose*.json
+debug_*.txt
+docker_events.txt
 
 # Spark data lake
 spark/data/
