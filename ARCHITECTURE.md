@@ -76,6 +76,16 @@ flowchart LR
 
 This separation is deliberate. Each tool has one clear role, which makes the system easier to explain, debug, and extend.
 
+The local PostgreSQL server contains separate databases for separate responsibilities:
+
+```text
+fintech  -> warehouse tables and dbt analytical models
+airflow  -> Airflow metadata such as DAG runs, task states, logs, variables, and connections
+metabase -> Metabase metadata such as dashboards, questions, users, and settings
+```
+
+This keeps operational metadata separate from analytical warehouse data.
+
 ---
 
 ## 4. Data Model
@@ -206,6 +216,8 @@ Current behavior:
 The Bronze ingestion task uses `availableNow=True`, so it can be orchestrated by Airflow and finish successfully during a local demo.
 
 The repository also contains `spark/app/bronze_stream.py`, which represents the long-running streaming variant. In a production setup, this type of job would usually be managed separately from the analytical Airflow DAG.
+
+The demo ingestion job and the long-running stream use separate checkpoint directories to avoid mixing execution state between local Airflow runs and manual streaming experiments. They should not be run at the same time because both write to the same Bronze output path.
 
 ---
 

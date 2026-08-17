@@ -1,1 +1,2 @@
 CREATE DATABASE metabase;
+CREATE DATABASE airflow;

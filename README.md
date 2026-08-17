@@ -204,7 +204,14 @@ PostgreSQL local credentials:
 ```text
 user: fintech
 password: fintech
-database: fintech
+```
+
+Local PostgreSQL databases:
+
+```text
+fintech  -> warehouse tables and dbt models
+airflow  -> Airflow metadata
+metabase -> Metabase metadata, dashboards, questions, users, and settings
 ```
 
 ---
@@ -455,6 +462,198 @@ docker compose stop producer
 
 ---
 
+## Reset Pipeline Data Without Deleting Metabase Dashboards
+
+Use this section when you want to generate a fresh dataset and rerun the pipeline without deleting Metabase dashboards.
+
+This is the recommended reset option for local demos.
+
+It deletes:
+
+- Bronze, Silver, and Gold Parquet files from `spark/data`,
+- Spark streaming checkpoints from `spark/data/checkpoints`,
+- warehouse tables and dbt-created models stored in PostgreSQL,
+- Kafka topic data from the `transactions` topic.
+
+It does not delete:
+
+- Metabase dashboards,
+- Metabase questions,
+- Metabase database connection setup,
+- source code,
+- Docker images.
+
+### 1. Make sure the platform is running
+
+```powershell
+docker compose up -d
+```
+
+### 2. Run the reset script
+
+From the project root:
+
+```powershell
+.\scripts\reset_pipeline_data.ps1
+```
+
+The script:
+
+- stops the producer,
+- removes Spark lake files and checkpoints,
+- drops warehouse and dbt tables from the `fintech` database,
+- deletes and recreates the Kafka topic `transactions`,
+- keeps Metabase metadata untouched.
+
+If you want to keep existing Kafka messages, run:
+
+```powershell
+.\scripts\reset_pipeline_data.ps1 -SkipKafkaReset
+```
+
+### 3. Generate fresh Kafka data
+
+Start the producer:
+
+```powershell
+docker compose start producer
+```
+
+Let the `producer` run for 1-2 minutes.
+
+Then stop only the producer:
+
+```powershell
+docker compose stop producer
+```
+
+### 4. Run the Airflow pipeline
+
+Open Airflow:
+
+```text
+http://localhost:8088
+```
+
+Use:
+
+```text
+user: admin
+password: admin
+```
+
+Trigger:
+
+```text
+daily_fintech_pipeline
+```
+
+Expected task order:
+
+```text
+ingest_bronze_layer_for_demo -> build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
+```
+
+### 5. Verify fresh data
+
+Check warehouse load timestamps:
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select max(warehouse_loaded_at) from daily_transaction_metrics;"
+```
+
+Check row counts:
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select count(*) from daily_transaction_metrics;"
+```
+
+Check Bronze files:
+
+```powershell
+docker exec spark ls -R /opt/spark-data/bronze/transactions
+```
+
+If these checks return data, the pipeline was rebuilt from a clean local state.
+
+### Full environment reset
+
+Use this only if you also want to delete Metabase dashboards and all local PostgreSQL data.
+
+Warning: this removes the PostgreSQL Docker volume `postgres_data`. In this project, that volume stores both:
+
+```text
+database fintech  -> warehouse and dbt tables
+database airflow  -> Airflow metadata
+database metabase -> Metabase dashboards, questions, users, and settings
+```
+
+Full reset command:
+
+```powershell
+docker compose down -v
+```
+
+After this, Metabase setup and dashboards need to be recreated.
+
+---
+
+## Backup and Restore Metabase Dashboards
+
+Metabase stores dashboards, questions, collections, users, and connection metadata in its application database. In this project, that application database is the local PostgreSQL database named `metabase`.
+
+To avoid losing dashboard work during local resets, back up the Metabase metadata database after creating or updating dashboards.
+
+### Back up Metabase metadata
+
+From the project root:
+
+```powershell
+.\scripts\export_metabase.ps1
+```
+
+The backup is written to:
+
+```text
+metabase/backup/metabase_metadata.dump
+```
+
+This uses PostgreSQL `pg_dump` against the local `metabase` database. It works with the open-source Metabase Docker image and stores dashboards, questions, collections, users, and Metabase database connections.
+
+Recommended workflow:
+
+1. Create or update dashboards in Metabase.
+2. Run `.\scripts\export_metabase.ps1`.
+3. Commit the backup together with the project.
+
+### Restore Metabase metadata
+
+Restoring replaces the local Metabase metadata database, so the script requires the explicit `-Force` flag.
+
+Run:
+
+```powershell
+.\scripts\import_metabase.ps1 -Force
+```
+
+Then open Metabase:
+
+```text
+http://localhost:3000
+```
+
+If the warehouse connection is missing or invalid, reconnect Metabase to the local PostgreSQL warehouse manually:
+
+```text
+host: postgres
+port: 5432
+database: fintech
+user: fintech
+password: fintech
+```
+
+---
+
 ## Useful Commands
 
 ### Start containers
@@ -499,15 +698,25 @@ docker compose start producer
 docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_available_now_job.py
 ```
 
-This job processes currently available Kafka messages and then finishes automatically.
+Use this version for local demos and Airflow runs.
 
-### Run long-running Kafka-to-Bronze stream manually
+It processes currently available Kafka messages, writes them to Bronze Parquet, and then finishes automatically. This behavior is useful for a portfolio demo because the Airflow task can complete successfully and the DAG can continue to Silver, Gold, PostgreSQL, and dbt.
+
+### Run production-style Kafka-to-Bronze stream manually
 
 ```powershell
 docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
 ```
 
-This version is closer to a production streaming process because it keeps running until stopped with `Ctrl + C`. Do not run it at the same time as `bronze_available_now_job.py`, because both jobs use the same Bronze checkpoint.
+This is the production-style version of Bronze ingestion.
+
+It keeps running until stopped with `Ctrl + C`, continuously reading new Kafka messages and appending them to the Bronze layer. In a real production setup, this type of job would usually be managed as a separate long-running streaming process.
+
+For normal local demos, use the Airflow DAG. Do not run `bronze_stream.py` while the Airflow DAG is running, because both jobs write to the same Bronze folder:
+
+```text
+/opt/spark-data/bronze/transactions
+```
 
 ### Run dbt models
 
@@ -731,13 +940,20 @@ ingest Bronze layer for demo -> build Silver layer -> build Gold layer -> load G
 
 The first DAG task uses `spark/app/bronze_available_now_job.py`. This is a finite Spark Structured Streaming job using `availableNow=True`: it processes Kafka messages that are currently available, writes them to Bronze Parquet, and then exits.
 
-The project also keeps `spark/app/bronze_stream.py` as a long-running streaming variant:
+The project also keeps `spark/app/bronze_stream.py` as the production-style long-running streaming variant:
 
 ```powershell
 docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
 ```
 
 In a real production setup, the long-running Bronze stream would usually run as a separate continuously managed process. For local portfolio demos, the finite Airflow task is easier to run and verify end-to-end.
+
+Summary:
+
+```text
+bronze_available_now_job.py -> local demo / Airflow-friendly
+bronze_stream.py            -> production-style long-running stream
+```
 
 ---
 

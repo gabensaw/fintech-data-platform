@@ -3,7 +3,7 @@ from pyspark.sql.functions import current_timestamp
 
 
 BRONZE_PATH = "/opt/spark-data/bronze/transactions"
-CHECKPOINT_PATH = "/opt/spark-data/checkpoints/bronze/transactions"
+CHECKPOINT_PATH = "/opt/spark-data/checkpoints/bronze/transactions_available_now"
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_TOPIC = "transactions"
 

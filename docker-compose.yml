@@ -139,8 +139,8 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/airflow
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/simple_auth_manager_passwords.json
 
@@ -175,8 +175,8 @@ services:
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/airflow
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/airflow
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
       AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/simple_auth_manager_passwords.json
 
