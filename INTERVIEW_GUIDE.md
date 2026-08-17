@@ -163,8 +163,10 @@ To keep the load auditable, the warehouse tables include `warehouse_loaded_at`, 
 
 There are two levels:
 
-1. Spark Silver validation filters invalid records, such as missing IDs, missing timestamps, or non-positive amounts.
+1. Spark Silver validation separates valid records from rejected records, such as missing IDs, missing timestamps, or non-positive amounts.
 2. dbt tests validate assumptions in warehouse and mart models, such as not-null fields, uniqueness, accepted values, and relationships.
+
+Rejected records are stored separately with a rejection reason, which makes data quality issues auditable without polluting the clean Silver dataset.
 
 ### Q: Is this a real-time platform?
 
@@ -178,9 +180,8 @@ Kubernetes would increase operational complexity without improving the main port
 
 The highest-value next improvements are:
 
-1. Add rejected-record output for invalid Silver records.
-2. Add screenshots of Airflow, dbt docs, Kafka UI, and Metabase.
-3. Add CI checks for dbt tests.
+1. Add screenshots of Airflow, dbt docs, Kafka UI, and Metabase.
+2. Add CI checks for dbt tests.
 
 ---
 

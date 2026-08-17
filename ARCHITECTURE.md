@@ -131,7 +131,7 @@ Main processing steps:
 - flatten the transaction structure,
 - convert timestamps,
 - validate required fields,
-- reject invalid records through filtering,
+- write invalid records to a rejected-records dataset with rejection reasons,
 - add ingestion metadata,
 - add pipeline version metadata.
 
@@ -222,6 +222,14 @@ Spark filters records with:
 - missing fraud flag,
 - invalid event timestamp.
 
+Rejected records are written to:
+
+```text
+/opt/spark-data/silver/rejected_transactions
+```
+
+Each rejected record includes the raw event, Kafka timestamp, rejection reason, rejection timestamp, and pipeline version.
+
 ### dbt tests
 
 dbt validates assumptions in the warehouse and mart layer, including:
@@ -298,9 +306,8 @@ These are acceptable trade-offs for the current project stage because the goal i
 
 Highest-value improvements:
 
-1. Add rejected-record output for invalid Silver records.
-2. Add screenshots of Airflow, Kafka UI, dbt docs, and Metabase to `docs/`.
-3. Add CI checks for dbt tests or SQL linting.
+1. Add screenshots of Airflow, Kafka UI, dbt docs, and Metabase to `docs/`.
+2. Add CI checks for dbt tests or SQL linting.
 
 Lower-priority improvements:
 

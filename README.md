@@ -279,6 +279,70 @@ Note: PostgreSQL timestamps may be shown in UTC. For example, `19:24 UTC` equals
 
 ---
 
+## Test Rejected Records
+
+The normal producer generates valid transactions. To test Silver-layer rejection logic, send five intentionally invalid events:
+
+If the stack was already running before this script was added, rebuild the producer image first:
+
+```powershell
+docker compose up -d --build producer
+```
+
+```powershell
+docker exec producer python send_invalid_transactions.py
+```
+
+Run the Bronze streaming job for 30-60 seconds so the invalid Kafka events are written to Bronze:
+
+```powershell
+docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
+```
+
+Stop it with `Ctrl + C`, then trigger `daily_fintech_pipeline` in Airflow.
+
+After the DAG finishes, inspect rejected records:
+
+```powershell
+docker exec -it spark /opt/spark/bin/pyspark
+```
+
+Inside PySpark:
+
+```python
+df = spark.read.parquet("/opt/spark-data/silver/rejected_transactions")
+df.groupBy("rejection_reason").count().show(truncate=False)
+df.select("rejection_reason", "raw_event_json").show(20, truncate=False)
+```
+
+Expected rejection reasons include:
+
+- `missing_transaction_id`
+- `non_positive_amount`
+- `missing_merchant`
+- `invalid_event_timestamp`
+- `missing_customer_id`
+- `missing_amount`
+- `missing_currency`
+- `missing_payment_method`
+- `missing_fraud_flag`
+
+Expected grouped result:
+
+```text
++-------------------------------------------------------------------------------------------------+-----+
+|rejection_reason                                                                                 |count|
++-------------------------------------------------------------------------------------------------+-----+
+|missing_transaction_id                                                                           |1    |
+|non_positive_amount                                                                              |1    |
+|missing_merchant                                                                                 |1    |
+|invalid_event_timestamp                                                                          |1    |
+|missing_customer_id, missing_amount, missing_currency, missing_payment_method, missing_fraud_flag|1    |
++-------------------------------------------------------------------------------------------------+-----+
+```
+
+---
+
 ## Data Lake Layers
 
 ### Bronze
@@ -302,7 +366,16 @@ Main transformations:
 - timestamp normalization,
 - required field validation,
 - positive amount validation,
+- rejected-record capture with rejection reasons,
 - ingestion metadata.
+
+Rejected records are written separately to:
+
+```text
+/opt/spark-data/silver/rejected_transactions
+```
+
+This keeps invalid records auditable without allowing them into analytical datasets.
 
 ### Gold
 
@@ -426,7 +499,6 @@ The project is designed for a portfolio and local reproducibility. Docker Compos
 
 High-value improvements for portfolio quality:
 
-- add rejected-record handling in the Silver layer,
 - add a small demo script for recruiters,
 - add screenshots of Metabase and Airflow to `docs/`,
 - add CI checks for dbt tests and SQL linting.
