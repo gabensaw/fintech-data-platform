@@ -88,6 +88,8 @@ flowchart LR
 |   |   +-- marts/
 |   +-- dbt_project.yml
 |   +-- profiles.yml
++-- docs/
+|   +-- images/
 +-- producer/
 |   +-- Dockerfile
 |   +-- producer.py
@@ -115,6 +117,14 @@ flowchart LR
 
 - [Technical architecture](ARCHITECTURE.md)
 - [Interview guide](INTERVIEW_GUIDE.md)
+
+---
+
+## Dashboard Preview
+
+The final analytics layer is exposed in Metabase through a dashboard built on top of dbt marts and PostgreSQL warehouse tables.
+
+![Metabase dashboard preview](docs/images/metabase-dashboard.png)
 
 ---
 
@@ -1026,7 +1036,6 @@ The project is designed for a portfolio and local reproducibility. Docker Compos
 High-value improvements for portfolio quality:
 
 - add a small demo script for recruiters,
-- add screenshots of Metabase and Airflow to `docs/`,
 - add CI checks for dbt tests and SQL linting.
 
 Lower-priority improvements:
