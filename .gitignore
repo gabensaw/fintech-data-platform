@@ -17,6 +17,9 @@ venv/
 # OS files
 .DS_Store
 
+# Local interview preparation notes
+INTERVIEW_GUIDE.md
+
 # Logs
 logs/
 *.log

@@ -1019,15 +1019,31 @@ The project is designed for a portfolio and local reproducibility. Docker Compos
 
 ## What This Project Demonstrates
 
-- Building an end-to-end data platform.
-- Working with streaming and batch processing patterns.
-- Designing Bronze, Silver, and Gold data lake layers.
-- Loading analytical datasets into a warehouse.
-- Creating dbt staging and mart models.
-- Applying data quality checks.
-- Orchestrating a data workflow with Airflow.
-- Exposing analytics through a BI tool.
-- Keeping a complex stack reproducible with Docker Compose.
+This project demonstrates practical Data Engineering skills across the full data platform lifecycle:
+
+- Event-driven ingestion using Python, Kafka, and Spark Structured Streaming.
+- Medallion architecture with Bronze, Silver, and Gold Parquet layers.
+- Data validation and rejected-record handling in the Silver layer.
+- Business aggregation design for transaction, merchant, fraud, and platform KPIs.
+- Warehouse loading from Spark to PostgreSQL through JDBC.
+- Analytics engineering with dbt staging models, marts, tests, and documentation.
+- Workflow orchestration with Airflow DAG dependencies.
+- BI integration with Metabase on top of warehouse marts.
+- Local reproducibility with Docker Compose and documented operational scripts.
+- Clear separation between analytical data, Airflow metadata, and Metabase metadata.
+
+---
+
+## Design Trade-offs
+
+This project intentionally uses a simple but realistic local architecture:
+
+- Docker Compose is used instead of Kubernetes to keep the project easy to run locally.
+- PostgreSQL is used as a lightweight warehouse instead of a cloud warehouse.
+- Parquet is used as a local data lake format for Bronze, Silver, and Gold layers.
+- Full refresh loading is used for portfolio simplicity instead of incremental warehouse loading.
+- The Airflow demo DAG uses an available-now Bronze ingestion job, while `bronze_stream.py` shows the production-style long-running streaming variant.
+- Metabase metadata is backed up separately from pipeline data so dashboards can survive local data resets.
 
 ---
 

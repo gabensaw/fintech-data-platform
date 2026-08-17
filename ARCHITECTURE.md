@@ -40,7 +40,9 @@ flowchart LR
     Loader --> Warehouse[PostgreSQL warehouse]
     Warehouse --> Dbt[dbt staging and marts]
     Dbt --> Metabase[Metabase dashboards]
-    Airflow[Airflow DAG] --> SilverJob
+    Airflow[Airflow DAG]
+    Airflow --> BronzeJob
+    Airflow --> SilverJob
     Airflow --> GoldJob
     Airflow --> Loader
     Airflow --> Dbt
@@ -313,7 +315,7 @@ This is a local portfolio project, so some production concerns are simplified:
 - no schema registry,
 - no monitoring and alerting stack,
 - no CI/CD pipeline yet,
-- no incremental loading strategy yet.
+- full refresh warehouse loading instead of incremental loading.
 
 These are acceptable trade-offs for the current project stage because the goal is a clear, runnable, interview-ready data platform.
 
@@ -323,7 +325,7 @@ These are acceptable trade-offs for the current project stage because the goal i
 
 Highest-value improvements:
 
-1. Add screenshots of Airflow, Kafka UI, dbt docs, and Metabase to `docs/`.
+1. Add screenshots of Airflow, Kafka UI, and dbt docs to `docs/`.
 2. Add CI checks for dbt tests or SQL linting.
 
 Lower-priority improvements:
