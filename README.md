@@ -8,6 +8,38 @@ The goal is to show a realistic local data platform, not a course-style single-s
 
 ---
 
+## Table of Contents
+
+- Overview
+  - [Business Problem](#business-problem)
+  - [Architecture](#architecture)
+  - [Technology Stack](#technology-stack)
+  - [Dashboard Preview](#dashboard-preview)
+  - [Demo Walkthrough](#demo-walkthrough)
+- Running the Project
+  - [Quick Start](#quick-start)
+  - [Local URLs](#local-urls)
+  - [End-to-End Runbook](#end-to-end-runbook)
+  - [Verify a Successful Pipeline Run](#verify-a-successful-pipeline-run)
+- Operations
+  - [Reset Pipeline Data Without Deleting Metabase Dashboards](#reset-pipeline-data-without-deleting-metabase-dashboards)
+  - [Backup and Restore Metabase Dashboards](#backup-and-restore-metabase-dashboards)
+  - [Useful Commands](#useful-commands)
+  - [Test Rejected Records](#test-rejected-records)
+- Technical Details
+  - [Repository Structure](#repository-structure)
+  - [Data Lake Layers](#data-lake-layers)
+  - [Warehouse and dbt Models](#warehouse-and-dbt-models)
+  - [Airflow DAG](#airflow-dag)
+  - [Analytical Outputs](#analytical-outputs)
+- Portfolio Notes
+  - [Key Engineering Decisions](#key-engineering-decisions)
+  - [What This Project Demonstrates](#what-this-project-demonstrates)
+  - [Design Trade-offs](#design-trade-offs)
+  - [Future Improvements](#future-improvements)
+
+---
+
 ## Business Problem
 
 Fintech companies process large volumes of payment transactions. Business teams need reliable access to metrics such as:
@@ -132,6 +164,21 @@ flowchart LR
 The final analytics layer is exposed in Metabase through a dashboard built on top of dbt marts and PostgreSQL warehouse tables.
 
 ![Metabase dashboard preview](docs/images/metabase-dashboard.png)
+
+---
+
+## Demo Walkthrough
+
+For a quick project review:
+
+1. Start the stack with Docker Compose.
+2. Generate transaction events for 1-2 minutes.
+3. Stop the producer to keep the demo dataset stable.
+4. Trigger the Airflow DAG `daily_fintech_pipeline`.
+5. Check that dbt tests pass.
+6. Open the Metabase dashboard and review platform KPIs, revenue trends, fraud rate, and merchant performance.
+
+This walkthrough demonstrates the complete path from generated Kafka events to business-facing analytics.
 
 ---
 
