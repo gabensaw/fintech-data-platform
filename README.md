@@ -92,6 +92,12 @@ flowchart LR
 |   +-- profiles.yml
 +-- docs/
 |   +-- images/
++-- metabase/
+|   +-- backup/
++-- scripts/
+|   +-- export_metabase.ps1
+|   +-- import_metabase.ps1
+|   +-- reset_pipeline_data.ps1
 +-- producer/
 |   +-- Dockerfile
 |   +-- producer.py
@@ -118,7 +124,6 @@ flowchart LR
 ## Documentation
 
 - [Technical architecture](ARCHITECTURE.md)
-- [Interview guide](INTERVIEW_GUIDE.md)
 
 ---
 

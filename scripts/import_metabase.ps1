@@ -19,6 +19,29 @@ function Write-Step {
     Write-Host "[$Number/6] $Message"
 }
 
+function Invoke-NativeCommand {
+    param(
+        [string]$Command,
+        [string[]]$Arguments,
+        [string]$ErrorMessage
+    )
+
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+
+    try {
+        & $Command @Arguments
+        $ExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+
+    if ($ExitCode -ne 0) {
+        throw "$ErrorMessage Exit code: $ExitCode"
+    }
+}
+
 if (-not (Test-Path $HostBackupPath)) {
     throw "Backup file does not exist: $HostBackupPath"
 }
@@ -36,57 +59,57 @@ Write-Host ""
 Write-Host "WARNING: This restore replaces dashboards, questions, collections, users, and Metabase settings with the content of the backup."
 
 Write-Step 1 "Stopping Metabase to release metadata database connections"
-docker compose stop metabase
-if ($LASTEXITCODE -ne 0) {
-    throw "Stopping Metabase failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("compose", "stop", "metabase") `
+    -ErrorMessage "Stopping Metabase failed."
 
 Write-Step 2 "Copying local backup into PostgreSQL container"
 Write-Host "From: $HostBackupPath"
 Write-Host "To  : postgres:$ContainerBackupPath"
-docker cp $HostBackupPath "postgres:$ContainerBackupPath"
-if ($LASTEXITCODE -ne 0) {
-    throw "Copying Metabase backup into PostgreSQL container failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("cp", $HostBackupPath, "postgres:$ContainerBackupPath") `
+    -ErrorMessage "Copying Metabase backup into PostgreSQL container failed."
 
 Write-Step 3 "Recreating target database 'metabase'"
 Write-Host "Terminating active connections to database 'metabase'..."
-docker exec postgres psql -U fintech -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'metabase';"
-if ($LASTEXITCODE -ne 0) {
-    throw "Terminating Metabase database connections failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("exec", "postgres", "psql", "-U", "fintech", "-d", "postgres", "-c", "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'metabase';") `
+    -ErrorMessage "Terminating Metabase database connections failed."
 
 Write-Host "Dropping database 'metabase' if it exists..."
-docker exec postgres dropdb -U fintech --if-exists metabase
-if ($LASTEXITCODE -ne 0) {
-    throw "Dropping Metabase database failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("exec", "postgres", "dropdb", "-U", "fintech", "--if-exists", "metabase") `
+    -ErrorMessage "Dropping Metabase database failed."
 
 Write-Host "Creating empty database 'metabase'..."
-docker exec postgres createdb -U fintech metabase
-if ($LASTEXITCODE -ne 0) {
-    throw "Creating Metabase database failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("exec", "postgres", "createdb", "-U", "fintech", "metabase") `
+    -ErrorMessage "Creating Metabase database failed."
 
 Write-Step 4 "Restoring backup into database 'metabase'"
 Write-Host "Command: pg_restore -U fintech -d metabase --no-owner --no-privileges"
-docker exec postgres pg_restore -U fintech -d metabase --no-owner --no-privileges $ContainerBackupPath
-if ($LASTEXITCODE -ne 0) {
-    throw "Restoring Metabase database backup failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("exec", "postgres", "pg_restore", "-U", "fintech", "-d", "metabase", "--no-owner", "--no-privileges", $ContainerBackupPath) `
+    -ErrorMessage "Restoring Metabase database backup failed."
 
 Write-Step 5 "Removing temporary backup file from PostgreSQL container"
 Write-Host "File: postgres:$ContainerBackupPath"
-docker exec postgres rm -f $ContainerBackupPath
-if ($LASTEXITCODE -ne 0) {
-    throw "Removing temporary Metabase backup file failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("exec", "postgres", "rm", "-f", $ContainerBackupPath) `
+    -ErrorMessage "Removing temporary Metabase backup file failed."
 
 Write-Step 6 "Starting Metabase"
-docker compose start metabase
-if ($LASTEXITCODE -ne 0) {
-    throw "Starting Metabase failed."
-}
+Invoke-NativeCommand `
+    -Command "docker" `
+    -Arguments @("compose", "start", "metabase") `
+    -ErrorMessage "Starting Metabase failed."
 
 Write-Host ""
 Write-Host "Restore completed successfully."
