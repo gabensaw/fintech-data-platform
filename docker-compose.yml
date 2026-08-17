@@ -141,6 +141,8 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/simple_auth_manager_passwords.json
 
     depends_on:
       postgres:
@@ -150,6 +152,7 @@ services:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/simple_auth_manager_passwords.json:/opt/airflow/simple_auth_manager_passwords.json
       - /var/run/docker.sock:/var/run/docker.sock
 
     command:
@@ -174,12 +177,15 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
       AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://fintech:fintech@postgres/fintech
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/simple_auth_manager_passwords.json
 
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
       - ./dbt:/dbt
+      - ./airflow/simple_auth_manager_passwords.json:/opt/airflow/simple_auth_manager_passwords.json
       - /var/run/docker.sock:/var/run/docker.sock
 
     depends_on:

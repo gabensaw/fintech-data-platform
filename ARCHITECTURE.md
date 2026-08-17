@@ -191,16 +191,21 @@ Current DAG:
 ```text
 daily_fintech_pipeline
 
-build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
+ingest_bronze_layer_for_demo -> build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
 ```
 
 Current behavior:
 
-1. Run Spark job that builds the Silver layer from Bronze data.
-2. Run Spark job that builds the Gold layer from Silver data.
-3. Run Spark job that loads Gold data into PostgreSQL.
-4. Run dbt models.
-5. Run dbt tests.
+1. Run finite Spark Structured Streaming job that ingests currently available Kafka messages into Bronze Parquet.
+2. Run Spark job that builds the Silver layer from Bronze data.
+3. Run Spark job that builds the Gold layer from Silver data.
+4. Run Spark job that loads Gold data into PostgreSQL.
+5. Run dbt models.
+6. Run dbt tests.
+
+The Bronze ingestion task uses `availableNow=True`, so it can be orchestrated by Airflow and finish successfully during a local demo.
+
+The repository also contains `spark/app/bronze_stream.py`, which represents the long-running streaming variant. In a production setup, this type of job would usually be managed separately from the analytical Airflow DAG.
 
 ---
 

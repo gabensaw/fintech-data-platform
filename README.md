@@ -94,6 +94,7 @@ flowchart LR
 |   +-- requirements.txt
 +-- spark/
 |   +-- app/
+|   |   +-- bronze_available_now_job.py
 |   |   +-- bronze_stream.py
 |   |   +-- silver_job.py
 |   |   +-- gold_job.py
@@ -154,6 +155,12 @@ KAFKA_TOPIC=transactions
 docker compose up --build -d
 ```
 
+Note: after the platform starts, the `producer` container continuously sends transaction events to Kafka. For demos or controlled tests, you can stop only this container after enough data has been generated:
+
+```bash
+docker compose stop producer
+```
+
 ### 4. Check running services
 
 ```bash
@@ -183,12 +190,267 @@ Expected core services:
 | Metabase | http://localhost:3000 |
 | PostgreSQL | localhost:5432 |
 
+Airflow local credentials:
+
+```text
+user: admin
+password: admin
+```
+
+These credentials are intended only for local development and portfolio demos.
+
 PostgreSQL local credentials:
 
 ```text
 user: fintech
 password: fintech
 database: fintech
+```
+
+---
+
+## End-to-End Runbook
+
+Use this section when you want to run the whole platform from scratch and verify that data moved through every important layer.
+
+### 1. Start Docker Desktop
+
+Make sure Docker Desktop is running before using Docker Compose.
+
+On Windows PowerShell, you can verify Docker with:
+
+```powershell
+docker version
+```
+
+### 2. Create the local `.env` file
+
+If this is your first run, create `.env` from the provided example:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The default values are enough for local development.
+
+### 3. Start all containers
+
+From the project root directory, run:
+
+```powershell
+docker compose up --build -d
+```
+
+This starts Kafka, Kafka UI, the transaction producer, Spark, PostgreSQL, dbt, Airflow, and Metabase.
+
+The first run can take a few minutes because Docker needs to build images and initialize services.
+
+### 4. Check that containers are running
+
+Run:
+
+```powershell
+docker compose ps
+```
+
+Expected result: the main services should be `running` or `healthy`.
+
+Important containers:
+
+- `kafka`
+- `kafka-ui`
+- `producer`
+- `spark`
+- `postgres`
+- `dbt`
+- `airflow`
+- `metabase`
+
+### 5. Let the producer generate data
+
+The `producer` container continuously sends transaction events to Kafka.
+
+For a normal demo, let it run for 1-2 minutes so Kafka has data available for the pipeline.
+
+### 6. Check Kafka topic
+
+Open Kafka UI:
+
+```text
+http://localhost:8080
+```
+
+Check that the `transactions` topic exists and contains messages.
+
+This confirms:
+
+```text
+Python Producer -> Kafka
+```
+
+After Kafka contains messages, stop only the producer so it does not keep generating data forever:
+
+```powershell
+docker compose stop producer
+```
+
+This keeps the rest of the platform running.
+
+### 7. Open Airflow
+
+Open:
+
+```text
+http://localhost:8088
+```
+
+Use the local development credentials:
+
+```text
+user: admin
+password: admin
+```
+
+### 8. Trigger the pipeline DAG
+
+In Airflow:
+
+1. Open the `Dags` page.
+2. Find `daily_fintech_pipeline`.
+3. Enable the DAG if it is paused.
+4. Click `Trigger`.
+5. Wait until all tasks finish with `success`.
+
+Expected task order:
+
+```text
+ingest_bronze_layer_for_demo -> build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
+```
+
+This confirms:
+
+```text
+Kafka -> Bronze Parquet -> Silver Parquet -> Gold Parquet -> PostgreSQL -> dbt marts
+```
+
+The first task, `ingest_bronze_layer_for_demo`, uses Spark Structured Streaming with `availableNow=True`. It reads the currently available Kafka messages, writes them to Bronze Parquet, and then finishes. This makes it suitable for a local Airflow demo.
+
+### 9. Verify Bronze Parquet files
+
+Check that Bronze files were created:
+
+```powershell
+docker exec spark ls -R /opt/spark-data/bronze/transactions
+```
+
+This confirms:
+
+```text
+Kafka -> Bronze
+```
+
+### 10. Verify warehouse load in PostgreSQL
+
+Check when the warehouse tables were loaded:
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select max(warehouse_loaded_at) from daily_transaction_metrics;"
+```
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select max(warehouse_loaded_at) from merchant_metrics;"
+```
+
+Check row counts:
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select count(*) from daily_transaction_metrics;"
+```
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select count(*) from merchant_metrics;"
+```
+
+If rows exist and `warehouse_loaded_at` is filled, the Gold-to-PostgreSQL load worked.
+
+### 11. Verify dbt marts
+
+Check one of the final dbt models:
+
+```powershell
+docker exec postgres psql -U fintech -d fintech -c "select * from mart_platform_summary;"
+```
+
+Run dbt tests manually if needed:
+
+```powershell
+docker exec dbt dbt test
+```
+
+If dbt tests pass, the warehouse models meet the declared data quality rules.
+
+### 12. Inspect Parquet files in Spark
+
+Open PySpark inside the Spark container:
+
+```powershell
+docker exec -it spark /opt/spark/bin/pyspark
+```
+
+Check Silver records:
+
+```python
+silver_df = spark.read.parquet("/opt/spark-data/silver/transactions")
+silver_df.show(10, truncate=False)
+silver_df.printSchema()
+```
+
+Check Gold records:
+
+```python
+gold_df = spark.read.parquet("/opt/spark-data/gold/daily_transaction_metrics")
+gold_df.show(10, truncate=False)
+```
+
+Exit PySpark:
+
+```python
+exit()
+```
+
+This confirms that the data lake layers were created correctly.
+
+### 13. Open Metabase
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+Use Metabase to inspect the PostgreSQL warehouse tables and dashboard.
+
+Main tables to check:
+
+- `daily_transaction_metrics`
+- `merchant_metrics`
+- `mart_daily_kpis`
+- `mart_merchant_performance`
+- `mart_platform_summary`
+- `mart_top_merchants`
+
+### 14. Stop the platform
+
+When you are done:
+
+```powershell
+docker compose down
+```
+
+If you only want to stop data generation but keep the platform running:
+
+```powershell
+docker compose stop producer
 ```
 
 ---
@@ -214,6 +476,38 @@ docker compose logs -f producer
 docker compose logs -f spark
 docker compose logs -f airflow
 ```
+
+### Stop or start only the producer
+
+The `producer` service runs continuously and keeps generating Kafka events. For demos and local testing, stop it when you have enough data. This prevents the Bronze layer from growing too quickly and keeps Spark jobs faster.
+
+Stop only the producer:
+
+```bash
+docker compose stop producer
+```
+
+Start it again:
+
+```bash
+docker compose start producer
+```
+
+### Run Kafka-to-Bronze ingestion for Airflow demo
+
+```powershell
+docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_available_now_job.py
+```
+
+This job processes currently available Kafka messages and then finishes automatically.
+
+### Run long-running Kafka-to-Bronze stream manually
+
+```powershell
+docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
+```
+
+This version is closer to a production streaming process because it keeps running until stopped with `Ctrl + C`. Do not run it at the same time as `bronze_available_now_job.py`, because both jobs use the same Bronze checkpoint.
 
 ### Run dbt models
 
@@ -243,10 +537,12 @@ docker exec dbt dbt docs serve --host 0.0.0.0 --port 8081
 
 ## Verify a Successful Pipeline Run
 
+Before triggering the Airflow DAG, make sure Kafka contains messages. The DAG will run the demo Bronze ingestion task automatically.
+
 After triggering `daily_fintech_pipeline` in Airflow, all tasks should finish with `success`:
 
 ```text
-build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
+ingest_bronze_layer_for_demo -> build_silver_layer -> build_gold_layer -> load_gold_to_postgres -> dbt_run -> dbt_test
 ```
 
 Check when warehouse tables were last loaded:
@@ -283,23 +579,29 @@ Note: PostgreSQL timestamps may be shown in UTC. For example, `19:24 UTC` equals
 
 The normal producer generates valid transactions. To test Silver-layer rejection logic, send five intentionally invalid events:
 
+For a controlled test, stop the normal producer first so it does not keep generating valid events in the background:
+
+```powershell
+docker compose stop producer
+```
+
 If the stack was already running before this script was added, rebuild the producer image first:
 
 ```powershell
-docker compose up -d --build producer
+docker compose build producer
 ```
 
 ```powershell
-docker exec producer python send_invalid_transactions.py
+docker compose run --rm producer python send_invalid_transactions.py
 ```
 
-Run the Bronze streaming job for 30-60 seconds so the invalid Kafka events are written to Bronze:
+Trigger `daily_fintech_pipeline` in Airflow. The first DAG task will ingest the invalid Kafka events into Bronze, and the Silver task will write invalid rows to the rejected-records path.
+
+After the test, start the normal producer again only if you want to generate more live data:
 
 ```powershell
-docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
+docker compose start producer
 ```
-
-Stop it with `Ctrl + C`, then trigger `daily_fintech_pipeline` in Airflow.
 
 After the DAG finishes, inspect rejected records:
 
@@ -424,10 +726,18 @@ daily_fintech_pipeline
 Current DAG sequence:
 
 ```text
-build Silver layer -> build Gold layer -> load Gold data to PostgreSQL -> dbt run -> dbt test
+ingest Bronze layer for demo -> build Silver layer -> build Gold layer -> load Gold data to PostgreSQL -> dbt run -> dbt test
 ```
 
-This demonstrates orchestration of the analytical workflow while keeping transformation logic inside Spark and dbt.
+The first DAG task uses `spark/app/bronze_available_now_job.py`. This is a finite Spark Structured Streaming job using `availableNow=True`: it processes Kafka messages that are currently available, writes them to Bronze Parquet, and then exits.
+
+The project also keeps `spark/app/bronze_stream.py` as a long-running streaming variant:
+
+```powershell
+docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
+```
+
+In a real production setup, the long-running Bronze stream would usually run as a separate continuously managed process. For local portfolio demos, the finite Airflow task is easier to run and verify end-to-end.
 
 ---
 
