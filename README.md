@@ -37,7 +37,9 @@ flowchart LR
     H --> I[PostgreSQL warehouse]
     I --> J[dbt staging and marts]
     J --> K[Metabase dashboard]
-    L[Airflow] --> E
+    L[Airflow]
+    L --> C
+    L --> E
     L --> G
     L --> I
     L --> J
