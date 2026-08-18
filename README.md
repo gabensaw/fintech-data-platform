@@ -1,12 +1,12 @@
-# FinTech Data Platform
+# Fintech Data Platform
 
 [![dbt CI](https://github.com/gabensaw/fintech-data-platform/actions/workflows/dbt-ci.yml/badge.svg)](https://github.com/gabensaw/fintech-data-platform/actions/workflows/dbt-ci.yml)
 
-End-to-end data engineering portfolio project that simulates a fintech transaction analytics platform.
+End-to-end data engineering project that simulates a fintech transaction analytics platform.
 
 The project ingests synthetic transaction events, processes them through a layered data lake, loads business metrics into PostgreSQL, transforms them with dbt, orchestrates the analytical workflow with Airflow, and exposes the data to Metabase for reporting.
 
-The goal is to show a realistic local data platform, not a course-style single-script demo.
+The goal is to present a realistic, reproducible data platform with clear ingestion, processing, modeling, orchestration, and reporting layers.
 
 ---
 
@@ -17,7 +17,7 @@ The goal is to show a realistic local data platform, not a course-style single-s
   - [Architecture](#architecture)
   - [Technology Stack](#technology-stack)
   - [Dashboard Preview](#dashboard-preview)
-  - [Demo Walkthrough](#demo-walkthrough)
+  - [Project Walkthrough](#project-walkthrough)
   - [Continuous Integration](#continuous-integration)
 - Running the Project
   - [Quick Start](#quick-start)
@@ -170,13 +170,13 @@ The final analytics layer is exposed in Metabase through a dashboard built on to
 
 ---
 
-## Demo Walkthrough
+## Project Walkthrough
 
-For a quick project review:
+For a quick technical review:
 
 1. Start the stack with Docker Compose.
 2. Generate transaction events for 1-2 minutes.
-3. Stop the producer to keep the demo dataset stable.
+3. Stop the producer to keep the dataset stable.
 4. Trigger the Airflow DAG `daily_fintech_pipeline`.
 5. Check that dbt tests pass.
 6. Open the Metabase dashboard and review platform KPIs, revenue trends, fraud rate, and merchant performance.
@@ -240,7 +240,7 @@ KAFKA_TOPIC=transactions
 docker compose up --build -d
 ```
 
-Note: after the platform starts, the `producer` container continuously sends transaction events to Kafka. For demos or controlled tests, you can stop only this container after enough data has been generated:
+Note: after the platform starts, the `producer` container continuously sends transaction events to Kafka. For controlled runs, you can stop only this container after enough data has been generated:
 
 ```bash
 docker compose stop producer
@@ -282,7 +282,7 @@ user: admin
 password: admin
 ```
 
-These credentials are intended only for local development and portfolio demos.
+These credentials are intended only for local development.
 
 PostgreSQL local credentials:
 
@@ -362,7 +362,7 @@ Important containers:
 
 The `producer` container continuously sends transaction events to Kafka.
 
-For a normal demo, let it run for 1-2 minutes so Kafka has data available for the pipeline.
+For a controlled local run, let it run for 1-2 minutes so Kafka has data available for the pipeline.
 
 ### 6. Check Kafka topic
 
@@ -425,7 +425,7 @@ This confirms:
 Kafka -> Bronze Parquet -> Silver Parquet -> Gold Parquet -> PostgreSQL -> dbt marts
 ```
 
-The first task, `ingest_bronze_layer_for_demo`, uses Spark Structured Streaming with `availableNow=True`. It reads the currently available Kafka messages, writes them to Bronze Parquet, and then finishes. This makes it suitable for a local Airflow demo.
+The first task, `ingest_bronze_layer_for_demo`, uses Spark Structured Streaming with `availableNow=True`. It reads the currently available Kafka messages, writes them to Bronze Parquet, and then finishes. This makes it suitable for a finite Airflow task in a local environment.
 
 ### 9. Verify Bronze Parquet files
 
@@ -551,7 +551,7 @@ docker compose stop producer
 
 Use this section when you want to generate a fresh dataset and rerun the pipeline without deleting Metabase dashboards.
 
-This is the recommended reset option for local demos.
+This is the recommended reset option for controlled local runs.
 
 It deletes:
 
@@ -763,7 +763,7 @@ docker compose logs -f airflow
 
 ### Stop or start only the producer
 
-The `producer` service runs continuously and keeps generating Kafka events. For demos and local testing, stop it when you have enough data. This prevents the Bronze layer from growing too quickly and keeps Spark jobs faster.
+The `producer` service runs continuously and keeps generating Kafka events. For controlled local testing, stop it when you have enough data. This prevents the Bronze layer from growing too quickly and keeps Spark jobs faster.
 
 Stop only the producer:
 
@@ -777,15 +777,15 @@ Start it again:
 docker compose start producer
 ```
 
-### Run Kafka-to-Bronze ingestion for Airflow demo
+### Run Kafka-to-Bronze ingestion for Airflow
 
 ```powershell
 docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_available_now_job.py
 ```
 
-Use this version for local demos and Airflow runs.
+Use this version for finite Airflow runs.
 
-It processes currently available Kafka messages, writes them to Bronze Parquet, and then finishes automatically. This behavior is useful for a portfolio demo because the Airflow task can complete successfully and the DAG can continue to Silver, Gold, PostgreSQL, and dbt.
+It processes currently available Kafka messages, writes them to Bronze Parquet, and then finishes automatically. This behavior allows the Airflow task to complete successfully and the DAG can continue to Silver, Gold, PostgreSQL, and dbt.
 
 ### Run production-style Kafka-to-Bronze stream manually
 
@@ -797,7 +797,7 @@ This is the production-style version of Bronze ingestion.
 
 It keeps running until stopped with `Ctrl + C`, continuously reading new Kafka messages and appending them to the Bronze layer. In a real production setup, this type of job would usually be managed as a separate long-running streaming process.
 
-For normal local demos, use the Airflow DAG. Do not run `bronze_stream.py` while the Airflow DAG is running, because both jobs write to the same Bronze folder:
+For normal local runs, use the Airflow DAG. Do not run `bronze_stream.py` while the Airflow DAG is running, because both jobs write to the same Bronze folder:
 
 ```text
 /opt/spark-data/bronze/transactions
@@ -831,7 +831,7 @@ docker exec dbt dbt docs serve --host 0.0.0.0 --port 8081
 
 ## Verify a Successful Pipeline Run
 
-Before triggering the Airflow DAG, make sure Kafka contains messages. The DAG will run the demo Bronze ingestion task automatically.
+Before triggering the Airflow DAG, make sure Kafka contains messages. The DAG will run the finite Bronze ingestion task automatically.
 
 After triggering `daily_fintech_pipeline` in Airflow, all tasks should finish with `success`:
 
@@ -995,7 +995,7 @@ Base warehouse tables:
 
 Both warehouse tables include `warehouse_loaded_at`, a technical timestamp showing when the current Gold dataset was loaded into PostgreSQL.
 
-The current loading strategy is full refresh: each DAG run truncates and reloads the warehouse tables from the current Gold Parquet datasets. This keeps the portfolio pipeline simple, reproducible, and easy to debug while preserving dbt dependencies.
+The current loading strategy is full refresh: each DAG run truncates and reloads the warehouse tables from the current Gold Parquet datasets. This keeps the local pipeline reproducible and easy to debug while preserving dbt dependencies.
 
 dbt then builds analytical models:
 
@@ -1020,7 +1020,7 @@ daily_fintech_pipeline
 Current DAG sequence:
 
 ```text
-ingest Bronze layer for demo -> build Silver layer -> build Gold layer -> load Gold data to PostgreSQL -> dbt run -> dbt test
+ingest Bronze layer -> build Silver layer -> build Gold layer -> load Gold data to PostgreSQL -> dbt run -> dbt test
 ```
 
 The first DAG task uses `spark/app/bronze_available_now_job.py`. This is a finite Spark Structured Streaming job using `availableNow=True`: it processes Kafka messages that are currently available, writes them to Bronze Parquet, and then exits.
@@ -1031,12 +1031,12 @@ The project also keeps `spark/app/bronze_stream.py` as the production-style long
 docker exec spark /opt/spark/bin/spark-submit /opt/spark-apps/app/bronze_stream.py
 ```
 
-In a real production setup, the long-running Bronze stream would usually run as a separate continuously managed process. For local portfolio demos, the finite Airflow task is easier to run and verify end-to-end.
+In a production setup, the long-running Bronze stream would usually run as a separate continuously managed process. For local development, the finite Airflow task is easier to run and verify end-to-end.
 
 Summary:
 
 ```text
-bronze_available_now_job.py -> local demo / Airflow-friendly
+bronze_available_now_job.py -> finite Airflow ingestion
 bronze_stream.py            -> production-style long-running stream
 ```
 
@@ -1088,7 +1088,7 @@ Airflow shows workflow orchestration, dependency management, and repeatable exec
 
 ### Why no Kubernetes or microservices?
 
-The project is designed for a portfolio and local reproducibility. Docker Compose is enough to demonstrate the data platform architecture without unnecessary operational complexity.
+The project is designed for local reproducibility. Docker Compose is enough to run the data platform architecture without additional orchestration infrastructure.
 
 ---
 
@@ -1111,22 +1111,22 @@ This project demonstrates practical Data Engineering skills across the full data
 
 ## Design Trade-offs
 
-This project intentionally uses a simple but realistic local architecture:
+This project intentionally uses a compact local architecture:
 
 - Docker Compose is used instead of Kubernetes to keep the project easy to run locally.
 - PostgreSQL is used as a lightweight warehouse instead of a cloud warehouse.
 - Parquet is used as a local data lake format for Bronze, Silver, and Gold layers.
-- Full refresh loading is used for portfolio simplicity instead of incremental warehouse loading.
-- The Airflow demo DAG uses an available-now Bronze ingestion job, while `bronze_stream.py` shows the production-style long-running streaming variant.
+- Full refresh loading is used for deterministic local runs instead of incremental warehouse loading.
+- The Airflow DAG uses an available-now Bronze ingestion job, while `bronze_stream.py` shows the production-style long-running streaming variant.
 - Metabase metadata is backed up separately from pipeline data so dashboards can survive local data resets.
 
 ---
 
 ## Future Improvements
 
-High-value improvement for portfolio quality:
+Potential high-value improvement:
 
-- add a small demo script for recruiters.
+- add a small scripted project walkthrough.
 
 Lower-priority improvements:
 
@@ -1136,4 +1136,4 @@ Lower-priority improvements:
 - monitoring stack,
 - Kubernetes.
 
-These are intentionally not part of the current version to avoid overengineering.
+These are intentionally outside the current scope to keep the project focused and reproducible.

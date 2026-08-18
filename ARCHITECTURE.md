@@ -21,7 +21,7 @@ The platform demonstrates:
 - Airflow orchestration,
 - Metabase reporting.
 
-The project avoids unnecessary complexity such as Kubernetes, microservices, and machine learning because they would not improve the main portfolio signal for a Junior+/Mid Data Engineer role.
+The project intentionally excludes Kubernetes, microservices, and machine learning to keep the architecture focused on data ingestion, processing, modeling, orchestration, and reporting.
 
 ---
 
@@ -215,11 +215,11 @@ Current behavior:
 5. Run dbt models.
 6. Run dbt tests.
 
-The Bronze ingestion task uses `availableNow=True`, so it can be orchestrated by Airflow and finish successfully during a local demo.
+The Bronze ingestion task uses `availableNow=True`, so it can be orchestrated by Airflow and finish successfully as a finite local task.
 
 The repository also contains `spark/app/bronze_stream.py`, which represents the long-running streaming variant. In a production setup, this type of job would usually be managed separately from the analytical Airflow DAG.
 
-The demo ingestion job and the long-running stream use separate checkpoint directories to avoid mixing execution state between local Airflow runs and manual streaming experiments. They should not be run at the same time because both write to the same Bronze output path.
+The finite ingestion job and the long-running stream use separate checkpoint directories to avoid mixing execution state between local Airflow runs and manual streaming experiments. They should not be run at the same time because both write to the same Bronze output path.
 
 ---
 
@@ -284,7 +284,7 @@ This layer shows that the platform produces business-consumable outputs, not onl
 
 ### Docker Compose instead of Kubernetes
 
-Docker Compose keeps the project easy to run locally. Kubernetes would add operational complexity without improving the core Data Engineering portfolio signal.
+Docker Compose keeps the project easy to run locally. Kubernetes would add operational complexity that is outside the current scope of the project.
 
 ### PostgreSQL instead of Snowflake or BigQuery
 
@@ -292,7 +292,7 @@ PostgreSQL is sufficient for a local warehouse simulation. In a production cloud
 
 ### Parquet instead of a database-only design
 
-Parquet introduces a real data lake layer. This makes the project stronger than a simple Kafka-to-database pipeline.
+Parquet introduces a data lake layer and separates raw, cleaned, and aggregated datasets from the serving warehouse.
 
 ### dbt on top of PostgreSQL
 
@@ -306,18 +306,18 @@ Airflow coordinates tasks. It does not contain transformation logic. This keeps 
 
 ## 11. Current Limitations
 
-This is a local portfolio project, so some production concerns are simplified:
+This is a local data platform, so some production concerns are simplified:
 
 - synthetic data instead of real source systems,
 - local Docker runtime instead of cloud infrastructure,
-- simple credentials in local configuration,
+- local development credentials,
 - no centralized secret manager,
 - no schema registry,
 - no monitoring and alerting stack,
 - no CI/CD pipeline yet,
 - full refresh warehouse loading instead of incremental loading.
 
-These are acceptable trade-offs for the current project stage because the goal is a clear, runnable, interview-ready data platform.
+These are acceptable trade-offs for the current scope because the goal is a clear, runnable, reproducible data platform.
 
 ---
 
@@ -336,7 +336,7 @@ Lower-priority improvements:
 - data lineage tooling,
 - Kubernetes.
 
-The project should prioritize clarity, reproducibility, and interview value before adding more infrastructure.
+The project should prioritize clarity and reproducibility before adding more infrastructure.
 
 ---
 
