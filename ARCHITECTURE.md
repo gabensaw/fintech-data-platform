@@ -337,13 +337,3 @@ Lower-priority improvements:
 - Kubernetes.
 
 The project should prioritize clarity and reproducibility before adding more infrastructure.
-
----
-
-## 13. Interview Summary
-
-A concise way to explain the project:
-
-> I built a local end-to-end fintech data platform. A Python producer generates transaction events into Kafka. Spark processes the events through Bronze, Silver, and Gold Parquet layers. Gold metrics are loaded into PostgreSQL, dbt builds analytical marts and tests, Airflow orchestrates the workflow, and Metabase exposes the final business dashboards.
-
-The main engineering value is not any single tool. The value is the complete flow, clear layer separation, data quality strategy, and realistic production-style structure.
