@@ -1,5 +1,7 @@
 # FinTech Data Platform
 
+[![dbt CI](https://github.com/gabensaw/fintech-data-platform/actions/workflows/dbt-ci.yml/badge.svg)](https://github.com/gabensaw/fintech-data-platform/actions/workflows/dbt-ci.yml)
+
 End-to-end data engineering portfolio project that simulates a fintech transaction analytics platform.
 
 The project ingests synthetic transaction events, processes them through a layered data lake, loads business metrics into PostgreSQL, transforms them with dbt, orchestrates the analytical workflow with Airflow, and exposes the data to Metabase for reporting.

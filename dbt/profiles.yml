@@ -4,10 +4,10 @@ fintech:
   outputs:
     dev:
       type: postgres
-      host: postgres
-      user: fintech
-      password: fintech
-      port: 5432
-      dbname: fintech
-      schema: public
+      host: "{{ env_var('DBT_POSTGRES_HOST', 'postgres') }}"
+      user: "{{ env_var('DBT_POSTGRES_USER', 'fintech') }}"
+      password: "{{ env_var('DBT_POSTGRES_PASSWORD', 'fintech') }}"
+      port: "{{ env_var('DBT_POSTGRES_PORT', '5432') | int }}"
+      dbname: "{{ env_var('DBT_POSTGRES_DB', 'fintech') }}"
+      schema: "{{ env_var('DBT_POSTGRES_SCHEMA', 'public') }}"
       threads: 2

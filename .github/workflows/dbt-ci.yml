@@ -1,0 +1,93 @@
+name: dbt CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  dbt-build:
+    name: dbt build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16.5
+        env:
+          POSTGRES_USER: fintech
+          POSTGRES_PASSWORD: fintech
+          POSTGRES_DB: fintech
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fintech -d fintech"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DBT_PROFILES_DIR: dbt
+      DBT_POSTGRES_HOST: localhost
+      DBT_POSTGRES_USER: fintech
+      DBT_POSTGRES_PASSWORD: fintech
+      DBT_POSTGRES_PORT: 5432
+      DBT_POSTGRES_DB: fintech
+      DBT_POSTGRES_SCHEMA: public
+      PGPASSWORD: fintech
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt
+        run: pip install dbt-postgres==1.9.0
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create source tables for dbt tests
+        run: |
+          psql -h localhost -U fintech -d fintech <<'SQL'
+          create table daily_transaction_metrics (
+              transaction_date date primary key,
+              total_transactions integer not null,
+              total_amount numeric(18, 2) not null,
+              average_amount numeric(18, 2) not null,
+              fraud_count integer not null,
+              fraud_rate double precision not null,
+              warehouse_loaded_at timestamp not null
+          );
+
+          create table merchant_metrics (
+              merchant text primary key,
+              transaction_count integer not null,
+              total_amount numeric(18, 2) not null,
+              average_amount numeric(18, 2) not null,
+              fraud_count integer not null,
+              warehouse_loaded_at timestamp not null
+          );
+
+          insert into daily_transaction_metrics values
+              ('2026-08-15', 100, 12500.00, 125.00, 2, 0.02, now()),
+              ('2026-08-16', 120, 15600.00, 130.00, 3, 0.025, now());
+
+          insert into merchant_metrics values
+              ('Allegro', 80, 10000.00, 125.00, 1, now()),
+              ('Amazon', 60, 9000.00, 150.00, 2, now()),
+              ('Ikea', 45, 6500.00, 144.44, 1, now()),
+              ('Zalando', 35, 2600.00, 74.29, 1, now());
+          SQL
+
+      - name: Validate dbt connection
+        run: dbt debug --project-dir dbt
+
+      - name: Run dbt build
+        run: dbt build --project-dir dbt
