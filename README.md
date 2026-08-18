@@ -18,6 +18,7 @@ The goal is to show a realistic local data platform, not a course-style single-s
   - [Technology Stack](#technology-stack)
   - [Dashboard Preview](#dashboard-preview)
   - [Demo Walkthrough](#demo-walkthrough)
+  - [Continuous Integration](#continuous-integration)
 - Running the Project
   - [Quick Start](#quick-start)
   - [Local URLs](#local-urls)
@@ -181,6 +182,23 @@ For a quick project review:
 6. Open the Metabase dashboard and review platform KPIs, revenue trends, fraud rate, and merchant performance.
 
 This walkthrough demonstrates the complete path from generated Kafka events to business-facing analytics.
+
+---
+
+## Continuous Integration
+
+The repository includes a lightweight GitHub Actions workflow for the dbt layer.
+
+The workflow starts a temporary PostgreSQL service, creates minimal source tables, loads sample records, and runs:
+
+```bash
+dbt debug --project-dir dbt
+dbt build --project-dir dbt
+```
+
+This validates dbt connection configuration, model compilation, model dependencies, and dbt data tests.
+
+The CI workflow does not run the full Kafka/Spark/Airflow/Metabase stack. The full platform is intended to be run locally with Docker Compose.
 
 ---
 
@@ -1108,7 +1126,7 @@ This project intentionally uses a simple but realistic local architecture:
 High-value improvements for portfolio quality:
 
 - add a small demo script for recruiters,
-- add CI checks for dbt tests and SQL linting.
+- add SQL linting.
 
 Lower-priority improvements:
 
