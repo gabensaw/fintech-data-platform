@@ -193,10 +193,11 @@ The workflow starts a temporary PostgreSQL service, creates minimal source table
 
 ```bash
 dbt debug --project-dir dbt
+sqlfluff lint dbt/models
 dbt build --project-dir dbt
 ```
 
-This validates dbt connection configuration, model compilation, model dependencies, and dbt data tests.
+This validates dbt connection configuration, SQL style, model compilation, model dependencies, and dbt data tests.
 
 The CI workflow does not run the full Kafka/Spark/Airflow/Metabase stack. The full platform is intended to be run locally with Docker Compose.
 
@@ -1123,10 +1124,9 @@ This project intentionally uses a simple but realistic local architecture:
 
 ## Future Improvements
 
-High-value improvements for portfolio quality:
+High-value improvement for portfolio quality:
 
-- add a small demo script for recruiters,
-- add SQL linting.
+- add a small demo script for recruiters.
 
 Lower-priority improvements:
 

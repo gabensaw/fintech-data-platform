@@ -45,8 +45,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dbt
-        run: pip install dbt-postgres==1.9.0
+      - name: Install dbt and SQLFluff
+        run: pip install dbt-postgres==1.9.0 sqlfluff==4.3.0
 
       - name: Install PostgreSQL client
         run: |
@@ -88,6 +88,9 @@ jobs:
 
       - name: Validate dbt connection
         run: dbt debug --project-dir dbt
+
+      - name: Lint dbt SQL models
+        run: sqlfluff lint dbt/models
 
       - name: Run dbt build
         run: dbt build --project-dir dbt

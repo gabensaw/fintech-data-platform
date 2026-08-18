@@ -15,4 +15,4 @@ FROM (
             ORDER BY total_amount DESC
         ) AS ntile
     FROM {{ ref('stg_merchant_metrics') }}
-) t
+) AS t

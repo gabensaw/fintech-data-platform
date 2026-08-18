@@ -6,4 +6,4 @@ SELECT
     fraud_count
 FROM {{ ref('stg_merchant_metrics') }}
 
-ORDER by total_amount DESC 
+ORDER BY total_amount DESC

@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     transaction_date,
     total_transactions,
     total_amount,
